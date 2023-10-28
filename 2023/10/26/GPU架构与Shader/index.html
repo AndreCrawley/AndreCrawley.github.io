@@ -6,12 +6,12 @@
   
   <title>GPU架构与Shader | Simplify</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <meta name="description" content="GPU与Shader这篇博客结合结合GPU基本架构与Shader的基本变量、调用方法，浅析了Shader是如何在GPU上运行的。帮助自己理解Shader执行时较为底层的机制，由于资历尚浅，文中或许存在一些错误。 这篇博客参考了许多优秀的文章： DX12渲染器开发（2）：GPU硬件架构介绍 - 知乎 (zhihu.com) OpenGL学习随笔（一）– CPU和GPU的设计区别 - 幼儿园大班班长">
+  <meta name="description" content="这篇博客结合结合GPU基本架构与Shader的基本变量、调用方法，浅析了Shader是如何在GPU上运行的。帮助自己理解Shader执行时较为底层的机制，由于资历尚浅，文中或许存在一些错误。 这篇博客参考了许多优秀的文章： DX12渲染器开发（2）：GPU硬件架构介绍 - 知乎 (zhihu.com) OpenGL学习随笔（一）– CPU和GPU的设计区别 - 幼儿园大班班长 - 博客园 (cnb">
 <meta property="og:type" content="article">
 <meta property="og:title" content="GPU架构与Shader">
 <meta property="og:url" content="http://example.com/2023/10/26/GPU%E6%9E%B6%E6%9E%84%E4%B8%8EShader/index.html">
 <meta property="og:site_name" content="Simplify">
-<meta property="og:description" content="GPU与Shader这篇博客结合结合GPU基本架构与Shader的基本变量、调用方法，浅析了Shader是如何在GPU上运行的。帮助自己理解Shader执行时较为底层的机制，由于资历尚浅，文中或许存在一些错误。 这篇博客参考了许多优秀的文章： DX12渲染器开发（2）：GPU硬件架构介绍 - 知乎 (zhihu.com) OpenGL学习随笔（一）– CPU和GPU的设计区别 - 幼儿园大班班长">
+<meta property="og:description" content="这篇博客结合结合GPU基本架构与Shader的基本变量、调用方法，浅析了Shader是如何在GPU上运行的。帮助自己理解Shader执行时较为底层的机制，由于资历尚浅，文中或许存在一些错误。 这篇博客参考了许多优秀的文章： DX12渲染器开发（2）：GPU硬件架构介绍 - 知乎 (zhihu.com) OpenGL学习随笔（一）– CPU和GPU的设计区别 - 幼儿园大班班长 - 博客园 (cnb">
 <meta property="og:locale" content="en_US">
 <meta property="og:image" content="http://example.com/images/GPU-Shader/GPU-Architecture.png">
 <meta property="og:image" content="http://example.com/images/GPU-Shader/SM-Context.png">
@@ -21,7 +21,7 @@
 <meta property="og:image" content="http://example.com/images/GPU-Shader/C.png">
 <meta property="og:image" content="http://example.com/images/GPU-Shader/threadgroupids.png">
 <meta property="article:published_time" content="2023-10-26T13:08:51.000Z">
-<meta property="article:modified_time" content="2023-10-26T13:09:17.696Z">
+<meta property="article:modified_time" content="2023-10-26T13:12:26.864Z">
 <meta property="article:author" content="simplify">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="http://example.com/images/GPU-Shader/GPU-Architecture.png">
@@ -105,7 +105,7 @@
     
     <div class="e-content article-entry" itemprop="articleBody">
       
-        <h1 id="GPU与Shader"><a href="#GPU与Shader" class="headerlink" title="GPU与Shader"></a>GPU与Shader</h1><p>这篇博客结合结合GPU基本架构与Shader的基本变量、调用方法，浅析了Shader是如何在GPU上运行的。帮助自己理解Shader执行时较为底层的机制，由于资历尚浅，文中或许存在一些错误。</p>
+        <p>这篇博客结合结合GPU基本架构与Shader的基本变量、调用方法，浅析了Shader是如何在GPU上运行的。帮助自己理解Shader执行时较为底层的机制，由于资历尚浅，文中或许存在一些错误。</p>
 <p>这篇博客参考了许多优秀的文章：</p>
 <p><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/581345908">DX12渲染器开发（2）：GPU硬件架构介绍 - 知乎 (zhihu.com)</a></p>
 <p><a target="_blank" rel="noopener" href="https://www.cnblogs.com/panshengneng/p/8489926.html">OpenGL学习随笔（一）– CPU和GPU的设计区别 - 幼儿园大班班长 - 博客园 (cnblogs.com)</a></p>
@@ -230,7 +230,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://example.com/2023/10/26/GPU%E6%9E%B6%E6%9E%84%E4%B8%8EShader/" data-id="clo77dfhy0003c8v022t8fcxu" data-title="GPU架构与Shader" class="article-share-link"><span class="fa fa-share">Share</span></a>
+      <a data-url="http://example.com/2023/10/26/GPU%E6%9E%B6%E6%9E%84%E4%B8%8EShader/" data-id="clo9p6ok80002ucv04hcabduf" data-title="GPU架构与Shader" class="article-share-link"><span class="fa fa-share">Share</span></a>
       
       
       
@@ -239,6 +239,15 @@
   
     
 <nav id="article-nav">
+  
+    <a href="/2023/10/26/%E8%BD%AF%E5%85%89%E6%A0%85%E6%B8%B2%E6%9F%93%E5%99%A8/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          软光栅渲染器
+        
+      </div>
+    </a>
   
   
     <a href="/2023/08/08/%E9%A1%B9%E7%9B%AE%E4%BB%8B%E7%BB%8D%EF%BC%88%E4%B8%80%EF%BC%89/" id="article-nav-older" class="article-nav-link-wrap">
@@ -279,6 +288,10 @@
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2023/10/26/%E8%BD%AF%E5%85%89%E6%A0%85%E6%B8%B2%E6%9F%93%E5%99%A8/">软光栅渲染器</a>
+          </li>
         
           <li>
             <a href="/2023/10/26/GPU%E6%9E%B6%E6%9E%84%E4%B8%8EShader/">GPU架构与Shader</a>

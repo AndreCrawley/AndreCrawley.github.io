@@ -73,6 +73,99 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-软光栅渲染器" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2023/10/26/%E8%BD%AF%E5%85%89%E6%A0%85%E6%B8%B2%E6%9F%93%E5%99%A8/" class="article-date">
+  <time class="dt-published" datetime="2023-10-26T13:27:10.000Z" itemprop="datePublished">2023-10-26</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2023/10/26/%E8%BD%AF%E5%85%89%E6%A0%85%E6%B8%B2%E6%9F%93%E5%99%A8/">软光栅渲染器</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p>软光栅渲染器是一个使用软件模拟GPU硬件图形渲染流水线的项目，在Viual Studio 2017上，用C++语言实现了：Input Assembler、Vertex Shader、Primitive Assembler、Rasterizer、Pixel Shader、Output-Merger这样的一个图形渲染流水线。模拟经典的图形渲染流水线最基础的部分。</p>
+<p>本项目参考自：<a target="_blank" rel="noopener" href="https://yangwc.com/2019/05/01/SoftRenderer-Rasterization/">软渲染器Soft Renderer：光栅化篇 | YangWC’s Blog</a></p>
+<p>项目主要的一个架构就是图形界面+渲染逻辑。图形界面简单调用了Qt来实现，主要是利用Qt的画布来实现图形显示。另外一个重要功能是渲染逻辑，放在了一个类：RenderLoop中来实现，渲染逻辑主要包含三大部分：</p>
+<ol>
+<li><p>清除后帧缓存；</p>
+</li>
+<li><p>绘制；</p>
+<ol>
+<li><p>读取obj模型数据，涉及到了vertex buffer和index buffer两个数据结构；</p>
+</li>
+<li><p>将顶点组装成三角形片元，也就是图元组装阶段；</p>
+</li>
+<li><p>送入顶点着色器；</p>
+<ol>
+<li><p>执行MVP变换；模型空间、观察空间、投影空间。</p>
+<p>涉及到了三个矩阵：</p>
+<p>World：分别决定物体在空间中的位置、朝向、缩放；变换到世界空间；</p>
+<p>View：决定摄像机的位置，计算以摄像机为原点的物体坐标；变换到视图空间；</p>
+<p>Project：正交投影或者透视投影；变换到裁剪空间；</p>
+</li>
+<li><p>Gouraud着色（若选择Gouraud着色）；</p>
+</li>
+</ol>
+</li>
+<li><p>进行背面剔除；</p>
+</li>
+<li><p>进行几何裁剪；</p>
+</li>
+<li><p>执行透视除法，转化到标准设备空间，[0,1]。</p>
+</li>
+<li><p>进行视口变换，将图形从标准设备屏幕大小转化为真实的显示尺寸；</p>
+</li>
+<li><p>光栅化；</p>
+<ol>
+<li>Breshenham</li>
+<li>Edge-Walking</li>
+</ol>
+</li>
+<li><p>像素着色器；</p>
+<ol>
+<li>纹理；</li>
+<li>Blin-Phong着色（若选择Blin-Phong着色）；</li>
+</ol>
+</li>
+<li><p>进行深度判断，输出合并阶段；</p>
+</li>
+<li><p>之后交换前后缓存，显示图形。</p>
+</li>
+</ol>
+</li>
+<li><p>交换前后帧缓存。</p>
+</li>
+</ol>
+<p>进行透视插值矫正的原因是：</p>
+<p>透视投影时，物体在三维空间中等距离的点，投影到二维平面上后，有可能不再等距离。为了正确显示纹理，需要进行透视插值矫正。计算表明插值&#x2F;z与插值点的位置线性相关。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2023/10/26/%E8%BD%AF%E5%85%89%E6%A0%85%E6%B8%B2%E6%9F%93%E5%99%A8/" data-id="clo9p6okb0003ucv015do9q6f" data-title="软光栅渲染器" class="article-share-link"><span class="fa fa-share">Share</span></a>
+      
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
     <article id="post-GPU架构与Shader" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2023/10/26/GPU%E6%9E%B6%E6%9E%84%E4%B8%8EShader/" class="article-date">
@@ -95,7 +188,7 @@
     
     <div class="e-content article-entry" itemprop="articleBody">
       
-        <h1 id="GPU与Shader"><a href="#GPU与Shader" class="headerlink" title="GPU与Shader"></a>GPU与Shader</h1><p>这篇博客结合结合GPU基本架构与Shader的基本变量、调用方法，浅析了Shader是如何在GPU上运行的。帮助自己理解Shader执行时较为底层的机制，由于资历尚浅，文中或许存在一些错误。</p>
+        <p>这篇博客结合结合GPU基本架构与Shader的基本变量、调用方法，浅析了Shader是如何在GPU上运行的。帮助自己理解Shader执行时较为底层的机制，由于资历尚浅，文中或许存在一些错误。</p>
 <p>这篇博客参考了许多优秀的文章：</p>
 <p><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/581345908">DX12渲染器开发（2）：GPU硬件架构介绍 - 知乎 (zhihu.com)</a></p>
 <p><a target="_blank" rel="noopener" href="https://www.cnblogs.com/panshengneng/p/8489926.html">OpenGL学习随笔（一）– CPU和GPU的设计区别 - 幼儿园大班班长 - 博客园 (cnblogs.com)</a></p>
@@ -220,7 +313,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://example.com/2023/10/26/GPU%E6%9E%B6%E6%9E%84%E4%B8%8EShader/" data-id="clo77dfhy0003c8v022t8fcxu" data-title="GPU架构与Shader" class="article-share-link"><span class="fa fa-share">Share</span></a>
+      <a data-url="http://example.com/2023/10/26/GPU%E6%9E%B6%E6%9E%84%E4%B8%8EShader/" data-id="clo9p6ok80002ucv04hcabduf" data-title="GPU架构与Shader" class="article-share-link"><span class="fa fa-share">Share</span></a>
       
       
       
@@ -266,7 +359,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://example.com/2023/08/08/%E9%A1%B9%E7%9B%AE%E4%BB%8B%E7%BB%8D%EF%BC%88%E4%B8%80%EF%BC%89/" data-id="clo77dfhv0002c8v0b4o27vhe" data-title="项目介绍（一）" class="article-share-link"><span class="fa fa-share">Share</span></a>
+      <a data-url="http://example.com/2023/08/08/%E9%A1%B9%E7%9B%AE%E4%BB%8B%E7%BB%8D%EF%BC%88%E4%B8%80%EF%BC%89/" data-id="clo9p6okd0004ucv0dc3hb2p2" data-title="项目介绍（一）" class="article-share-link"><span class="fa fa-share">Share</span></a>
       
       
       
@@ -307,6 +400,10 @@
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2023/10/26/%E8%BD%AF%E5%85%89%E6%A0%85%E6%B8%B2%E6%9F%93%E5%99%A8/">软光栅渲染器</a>
+          </li>
         
           <li>
             <a href="/2023/10/26/GPU%E6%9E%B6%E6%9E%84%E4%B8%8EShader/">GPU架构与Shader</a>
