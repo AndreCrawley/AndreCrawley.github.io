@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="初次接触流体模拟还是在游戏程序设计这门课上，这门课的大作业是一个小组合作项目，要求基于Unity或UE开发一款游戏，最好实现一个算法。一筹莫展之际，朋友提到他看到的一位前辈关于流体模拟的一系列文章SPH（光滑粒子流体动力学）流体模拟实现：算法总览_sph算法计算流体-CSDN博客……2019到2020年跨年的那一周，在我们在学院，三个人实现了最简单的流体模拟部分，做了一个非常简单的小游戏。这个项目">
+<meta property="og:type" content="website">
+<meta property="og:title" content="流体模拟——Position Based Fluids">
+<meta property="og:url" content="http://example.com/drafts/%E6%B0%B4%E4%BD%93%E6%B8%B2%E6%9F%93PBD.html">
+<meta property="og:site_name" content="Simplify">
+<meta property="og:description" content="初次接触流体模拟还是在游戏程序设计这门课上，这门课的大作业是一个小组合作项目，要求基于Unity或UE开发一款游戏，最好实现一个算法。一筹莫展之际，朋友提到他看到的一位前辈关于流体模拟的一系列文章SPH（光滑粒子流体动力学）流体模拟实现：算法总览_sph算法计算流体-CSDN博客……2019到2020年跨年的那一周，在我们在学院，三个人实现了最简单的流体模拟部分，做了一个非常简单的小游戏。这个项目">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2023-10-28T07:12:17.000Z">
+<meta property="article:modified_time" content="2023-10-30T17:04:05.769Z">
+<meta property="article:author" content="simplify">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://example.com/drafts/%E6%B0%B4%E4%BD%93%E6%B8%B2%E6%9F%93PBD">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : false,
+    lang   : 'en'
+  };
+</script>
+
+  <title>流体模拟——Position Based Fluids | Simplify
+</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Simplify</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+  
+  
+
+          <div class="content page posts-expand">
+            
+
+    
+    
+    
+    <div class="post-block" lang="en">
+      <header class="post-header">
+
+<h1 class="post-title" itemprop="name headline">流体模拟——Position Based Fluids
+</h1>
+
+<div class="post-meta">
+  
+
+</div>
+
+</header>
+
+      
+      
+      
+      <div class="post-body">
+          <p>初次接触流体模拟还是在游戏程序设计这门课上，这门课的大作业是一个小组合作项目，要求基于Unity或UE开发一款游戏，最好实现一个算法。一筹莫展之际，朋友提到他看到的一位前辈关于流体模拟的一系列文章<a target="_blank" rel="noopener" href="https://blog.csdn.net/qq_39300235/article/details/100981656?spm=1001.2014.3001.5501">SPH（光滑粒子流体动力学）流体模拟实现：算法总览_sph算法计算流体-CSDN博客</a>……2019到2020年跨年的那一周，在我们在学院，三个人实现了最简单的流体模拟部分，做了一个非常简单的小游戏。这个项目以后有机会也会添加进来。在这个小游戏完成之际，我就产生了一些困惑，像是如何保证流体不可压缩、如何处理与其他物体的碰撞……很可惜，这些困惑搁置了许久，我也在不知不觉中渐渐远离了图形学和游戏开发。再到后来（此处省略许多经历QAQ），我跌跌撞撞地又回到了喜欢的方向上。在前辈的建议下，学习了Direct3D 12。在寻找几个练习项目时，又发现了一些非常优秀的前辈的项目，又看到了熟悉的SPH。一面是为了给自己找工作的时候添加一些项目经验，一面是弥补前些年留下的遗憾，我在D3D上用Computer Shader又实现了一次流体模拟。不同的是，这次实现的是基于PBD（Postion Based Dynamic）优化的SPH算法——PBF，也将部分计算从CPU搬到了GPU上。这篇博客将从PBD、PBF、D3D上PBF实现，这三个部分进行介绍。</p>
+<span id="more"></span>
+<p>PBD和PBF的许多公式网上已经介绍的非常多了，而且基本相似，这里仅仅做一些自己的理解和梳理，可能不是非常全面。想要了解理论细节可以参看下面的链接。</p>
+<p>本文参考了许多优秀的文章：</p>
+<p><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/469902084">Unity物理引擎实战-基于PBD方法的水体模拟（一） - 知乎 (zhihu.com)</a></p>
+<p><a target="_blank" rel="noopener" href="http://yangwc.com/2019/06/04/PositionBasedFluid/">流体模拟Fluid Simulation：Position Based Fluid | YangWC's Blog</a></p>
+<p><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/48737753">【深入浅出 Nvidia FleX】(1) Position Based Dynamics - 知乎 (zhihu.com)</a></p>
+<p><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/49536480">【深入浅出 Nvidia FleX】(2) Position Based Fluids - 知乎 (zhihu.com)</a></p>
+<h2 id="position-based-dynamic">Position Based Dynamic</h2>
+<p>传统的物理模拟常常使用基于力的方法（Force Based），这类方法通过计算物体受力，求解物体加速度，进一步更新物体速度、位置等。对于基于力的方法而言，时间步长越小，数值越稳定，但带来的计算量也就更大。基于力的方法针对每一种动态物体，会有一个独立的解算器（Solver），各种Solver按照一定顺序进行计算，从而得到模拟结果，这样会带来大量冗余工作。基于位置动力学（Position Based Dynamic，PBD）则使用同一种方式表达动态物体，这种方法只需要一个Solver便可以模拟所有物体，并支持它们之间的双向交互效果。PBD直接处理位移，通过求解满足约束函数，来调整每个物体的位置。</p>
+<p>常见的约束有：</p>
+<ul>
+<li>距离约束，用于模拟布料，包括布料的拉伸和弯曲等行为；</li>
+<li>形状约束，用于模拟刚体和软体；</li>
+<li>密度约束，用于模拟流体；</li>
+<li>体积约束，用于模拟充气体；</li>
+<li>碰撞约束，计算粒子之间的碰撞反应，比如把粒子从穿透状态解开，计算摩擦力等等</li>
+</ul>
+<h3 id="概述">概述</h3>
+<p>动力学物体由N个顶点和M个约束组成。</p>
+<p>顶点i的质量为mi，位置为xi，速度为vi。</p>
+<p><span class="math display">\[\begin{align}
+a &amp;= b + c \label{eq3} \\
+x &amp;= yz \label{eq4} \\
+l &amp;= m - n \label{eq5}
+\end{align}\]</span></p>
+<p>约束j有五种特性：</p>
+<ol type="1">
+<li>约束的基数nj；</li>
+<li>约束是实值函数；</li>
+<li>约束索引值为</li>
+<li>每个约束都有对应的刚度参数</li>
+<li>约束分为：
+<ol type="1">
+<li>等式约束：</li>
+<li>不等式约束：</li>
+</ol></li>
+</ol>
+<h3 id="pbd基本流程">PBD基本流程</h3>
+<p>PBD的基本流程如下：</p>
+<ol type="1">
+<li>初始化顶点位置、速度和质量倒数；</li>
+<li>将无法转换为位置约束的力（如重力）记为f，并根据f的值进行一次数值积分预测速度vi；</li>
+<li>对速度添加阻尼，然后计算位置预测值；</li>
+<li>生成约束碰撞；</li>
+<li>对约束进行迭代求解，校正粒子位置；</li>
+<li>更新粒子的位置和速度信息；</li>
+<li>根据摩擦（friction）和恢复（restitution）系数修改速度。</li>
+</ol>
+<h3 id="pdb理论">PDB理论</h3>
+<p>对于一个基数为n的约束，关联点为P1, ..., Pn，约束函数为C，刚度系数为k。用P=【】表示这些点组成的矩阵。则该约束可以表示为：</p>
+<p>C(p)=0</p>
+<p>目标是找到位移向量Δp，使得：</p>
+<p>C.=0</p>
+<p>对于约束函数C在其当前解的领域内进行一阶泰勒展开：</p>
+<p>C</p>
+<p>令</p>
+<p>由（1）（2）得：</p>
+<p>对于粒子i，约束投影后独影的位移向量：</p>
+<p>其中，</p>
+<p>上述公式考虑粒子质量相同时的情形，当粒子的质量不同时，公式（2）写为：</p>
+<p>公式（4）写为：</p>
+<p>公式（5）写为：</p>
+<h2 id="position-based-fluids">Position Based Fluids</h2>
+<p>PBD一开始是为模拟固体而设计的，Macklin等人[1]结合SPH插值方法，提出了基于PBD框架的流体模拟方法Position Based Fluids（PBF）。</p>
+<h3 id="不可压缩流体与拉格朗日乘子推导">不可压缩流体与拉格朗日乘子推导</h3>
+<p>流体粒子的密度由SPH插值计算得到：</p>
+<p>对于流体，保持不可压缩即保证流体的密度与静态密度相同。因此，对于每一个粒子施加一个常量密度约束：</p>
+<p>代入（1）式：</p>
+<p>只考虑相同质量的粒子时，可以省去质量：</p>
+<p>。</p>
+<h2 id="d3d上的流体模拟">D3D上的流体模拟</h2>
+<p>为了在D3D平台上实现流体模拟，这里借用了龙书给出的最基本的项目结构，在其中添加了几个类和Shader。主要涉及到这样几个部分：</p>
+<ul>
+<li>SPH.cpp：C++类，构造流体、虚粒子容器、设置流体模拟所需的一些常量（如重力、流体密度、虚拟网格尺寸）</li>
+<li>Grid.hlsl：Computer Shader，根据每个粒子的位置计算其所在的网格</li>
+<li>Sort.hlsl：Computer Shader，用于实现双调排序，加速粒子索引速度</li>
+<li>PBD：Computer Shader，位置预测、求解约束函数、位置更新等操作。</li>
+</ul>
+<p>后续会将详细内容补充上来……</p>
+<p>[1] Macklin, Miles, and Matthias Müller. &quot;Position based fluids.&quot; ACM Transactions on Graphics (TOG) 32.4 (2013): 104.</p>
+
+      </div>
+      
+      
+      
+    </div>
+    
+
+    
+    
+    
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#position-based-dynamic"><span class="nav-number">1.</span> <span class="nav-text">Position Based Dynamic</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">1.1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#pbd%E5%9F%BA%E6%9C%AC%E6%B5%81%E7%A8%8B"><span class="nav-number">1.2.</span> <span class="nav-text">PBD基本流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#pdb%E7%90%86%E8%AE%BA"><span class="nav-number">1.3.</span> <span class="nav-text">PDB理论</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#position-based-fluids"><span class="nav-number">2.</span> <span class="nav-text">Position Based Fluids</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%8D%E5%8F%AF%E5%8E%8B%E7%BC%A9%E6%B5%81%E4%BD%93%E4%B8%8E%E6%8B%89%E6%A0%BC%E6%9C%97%E6%97%A5%E4%B9%98%E5%AD%90%E6%8E%A8%E5%AF%BC"><span class="nav-number">2.1.</span> <span class="nav-text">不可压缩流体与拉格朗日乘子推导</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#d3d%E4%B8%8A%E7%9A%84%E6%B5%81%E4%BD%93%E6%A8%A1%E6%8B%9F"><span class="nav-number">3.</span> <span class="nav-text">D3D上的流体模拟</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">simplify</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">4</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">simplify</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

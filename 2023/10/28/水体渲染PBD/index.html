@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="初次接触流体模拟还是在游戏程序设计这门课上，这门课的大作业是一个小组合作项目，要求基于Unity或UE开发一款游戏，最好实现一个算法。一筹莫展之际，朋友提到他看到的一位前辈关于流体模拟的一系列文章SPH（光滑粒子流体动力学）流体模拟实现：算法总览_sph算法计算流体-CSDN博客……2019到2020年跨年的那一周，在我们在学院，三个人实现了最简单的流体模拟部分，做了一个非常简单的小游戏。这个项目">
+<meta property="og:type" content="article">
+<meta property="og:title" content="流体模拟——Position Based Fluids">
+<meta property="og:url" content="http://example.com/2023/10/28/%E6%B0%B4%E4%BD%93%E6%B8%B2%E6%9F%93PBD/index.html">
+<meta property="og:site_name" content="Simplify">
+<meta property="og:description" content="初次接触流体模拟还是在游戏程序设计这门课上，这门课的大作业是一个小组合作项目，要求基于Unity或UE开发一款游戏，最好实现一个算法。一筹莫展之际，朋友提到他看到的一位前辈关于流体模拟的一系列文章SPH（光滑粒子流体动力学）流体模拟实现：算法总览_sph算法计算流体-CSDN博客……2019到2020年跨年的那一周，在我们在学院，三个人实现了最简单的流体模拟部分，做了一个非常简单的小游戏。这个项目">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2023-10-28T07:12:17.000Z">
+<meta property="article:modified_time" content="2023-10-30T17:40:05.759Z">
+<meta property="article:author" content="simplify">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://example.com/2023/10/28/%E6%B0%B4%E4%BD%93%E6%B8%B2%E6%9F%93PBD/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+  <title>流体模拟——Position Based Fluids | Simplify</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Simplify</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2023/10/28/%E6%B0%B4%E4%BD%93%E6%B8%B2%E6%9F%93PBD/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="simplify">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Simplify">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          流体模拟——Position Based Fluids
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2023-10-28 15:12:17" itemprop="dateCreated datePublished" datetime="2023-10-28T15:12:17+08:00">2023-10-28</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2023-10-31 01:40:05" itemprop="dateModified" datetime="2023-10-31T01:40:05+08:00">2023-10-31</time>
+              </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>初次接触流体模拟还是在游戏程序设计这门课上，这门课的大作业是一个小组合作项目，要求基于Unity或UE开发一款游戏，最好实现一个算法。一筹莫展之际，朋友提到他看到的一位前辈关于流体模拟的一系列文章<a target="_blank" rel="noopener" href="https://blog.csdn.net/qq_39300235/article/details/100981656?spm=1001.2014.3001.5501">SPH（光滑粒子流体动力学）流体模拟实现：算法总览_sph算法计算流体-CSDN博客</a>……2019到2020年跨年的那一周，在我们在学院，三个人实现了最简单的流体模拟部分，做了一个非常简单的小游戏。这个项目以后有机会也会添加进来。在这个小游戏完成之际，我就产生了一些困惑，像是如何保证流体不可压缩、如何处理与其他物体的碰撞……很可惜，这些困惑搁置了许久，我也在不知不觉中渐渐远离了图形学和游戏开发。再到后来（此处省略许多经历QAQ），我跌跌撞撞地又回到了喜欢的方向上。在前辈的建议下，学习了Direct3D 12。在寻找几个练习项目时，又发现了一些非常优秀的前辈的项目，又看到了熟悉的SPH。一面是为了给自己找工作的时候添加一些项目经验，一面是弥补前些年留下的遗憾，我在D3D上用Computer Shader又实现了一次流体模拟。不同的是，这次实现的是基于PBD（Postion Based Dynamic）优化的SPH算法——PBF，也将部分计算从CPU搬到了GPU上。这篇博客将从PBD、PBF、D3D上PBF实现，这三个部分进行介绍。</p>
+<span id="more"></span>
+<p>PBD和PBF的许多公式网上已经介绍的非常多了，而且基本相似，这里仅仅做一些自己的理解和梳理，可能不是非常全面，最近时间太紧，具体的推导公式后续会补充上来。想要了解理论细节可以参看下面的链接。</p>
+<p>本文参考了许多优秀的文章：</p>
+<p><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/469902084">Unity物理引擎实战-基于PBD方法的水体模拟（一） - 知乎 (zhihu.com)</a></p>
+<p><a target="_blank" rel="noopener" href="http://yangwc.com/2019/06/04/PositionBasedFluid/">流体模拟Fluid Simulation：Position Based Fluid | YangWC's Blog</a></p>
+<p><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/48737753">【深入浅出 Nvidia FleX】(1) Position Based Dynamics - 知乎 (zhihu.com)</a></p>
+<p><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/49536480">【深入浅出 Nvidia FleX】(2) Position Based Fluids - 知乎 (zhihu.com)</a></p>
+<p>效果如下：</p>
+<video id="video" controls="" preload="none">
+<source id="mp4" src="/videos/PBD.mp4" type="video/mp4">
+</video>
+<h2 id="position-based-dynamic">Position Based Dynamic</h2>
+<p>传统的物理模拟常常使用基于力的方法（Force Based），这类方法通过计算物体受力，求解物体加速度，进一步更新物体速度、位置等。对于基于力的方法而言，时间步长越小，数值越稳定，但带来的计算量也就更大。基于力的方法针对每一种动态物体，会有一个独立的解算器（Solver），各种Solver按照一定顺序进行计算，从而得到模拟结果，这样会带来大量冗余工作。基于位置动力学（Position Based Dynamic，PBD）则使用同一种方式表达动态物体，这种方法只需要一个Solver便可以模拟所有物体，并支持它们之间的双向交互效果。PBD直接处理位移，通过求解满足约束函数，来调整每个物体的位置。</p>
+<p>常见的约束有：</p>
+<ul>
+<li>距离约束，用于模拟布料，包括布料的拉伸和弯曲等行为；</li>
+<li>形状约束，用于模拟刚体和软体；</li>
+<li>密度约束，用于模拟流体；</li>
+<li>体积约束，用于模拟充气体；</li>
+<li>碰撞约束，计算粒子之间的碰撞反应，比如把粒子从穿透状态解开，计算摩擦力等等</li>
+</ul>
+<h3 id="概述">概述</h3>
+<p>动力学物体由N个顶点和M个约束组成。</p>
+<p>顶点i的质量为mi，位置为xi，速度为vi。</p>
+<p>约束j有五种特性：</p>
+<ol type="1">
+<li>约束的基数nj；</li>
+<li>约束是实值函数；</li>
+<li>约束索引值为</li>
+<li>每个约束都有对应的刚度参数</li>
+<li>约束分为：
+<ol type="1">
+<li>等式约束：</li>
+<li>不等式约束：</li>
+</ol></li>
+</ol>
+<h3 id="pbd基本流程">PBD基本流程</h3>
+<p>PBD的基本流程如下：</p>
+<ol type="1">
+<li>初始化顶点位置、速度和质量倒数；</li>
+<li>将无法转换为位置约束的力（如重力）记为f，并根据f的值进行一次数值积分预测速度vi；</li>
+<li>对速度添加阻尼，然后计算位置预测值；</li>
+<li>生成约束碰撞；</li>
+<li>对约束进行迭代求解，校正粒子位置；</li>
+<li>更新粒子的位置和速度信息；</li>
+<li>根据摩擦（friction）和恢复（restitution）系数修改速度。</li>
+</ol>
+<h2 id="position-based-fluids">Position Based Fluids</h2>
+<p>PBD一开始是为模拟固体而设计的，Macklin等人[1]结合SPH插值方法，提出了基于PBD框架的流体模拟方法Position Based Fluids（PBF）。</p>
+<h2 id="d3d上的流体模拟">D3D上的流体模拟</h2>
+<p>为了在D3D平台上实现流体模拟，这里借用了龙书给出的最基本的项目结构，在其中添加了几个类和Shader。主要涉及到这样几个部分：</p>
+<ul>
+<li>SPH.cpp：C++类，构造流体、虚粒子容器、设置流体模拟所需的一些常量（如重力、流体密度、虚拟网格尺寸）</li>
+<li>Grid.hlsl：Computer Shader，根据每个粒子的位置计算其所在的网格</li>
+<li>Sort.hlsl：Computer Shader，用于实现双调排序，加速粒子索引速度</li>
+<li>PBD：Computer Shader，位置预测、求解约束函数、位置更新等操作。</li>
+</ul>
+<p>HLSL中涉及到这样几个结构体：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line">cbuffer cbSPHConstants : register(b0)</span><br><span class="line">&#123;</span><br><span class="line">	float HashScale;</span><br><span class="line">	float3 HashSize; </span><br><span class="line">	float3 HashTranslate; </span><br><span class="line">	float KernelRadius;</span><br><span class="line">	float KernelRadius2;</span><br><span class="line"></span><br><span class="line">	float POLY6ZERO;</span><br><span class="line">	float POLY6;</span><br><span class="line">	float SPIKY_GRAD;</span><br><span class="line">	float VISC_LAP;</span><br><span class="line"></span><br><span class="line">	float3 gravity;</span><br><span class="line">	float damping; </span><br><span class="line">	float density0;</span><br><span class="line">	float viscosity;</span><br><span class="line">	float fluidmass;</span><br><span class="line">	int NumParticles;</span><br><span class="line">	int NumBoundaryParticles;</span><br><span class="line"></span><br><span class="line">	int solverIterations;</span><br><span class="line">	float deltaTime;</span><br><span class="line">	float invDensity0;</span><br><span class="line">	</span><br><span class="line">	int TotalParticles;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">struct Particle</span><br><span class="line">&#123;</span><br><span class="line">	float density;</span><br><span class="line">	float3 velocity;</span><br><span class="line">	float3 position;</span><br><span class="line">	float3 predictPosition;</span><br><span class="line">	float lambda;</span><br><span class="line">	float4 color;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>通过设置根签名，规定数据传递的槽。渲染过程中，在不同的槽设置不同的数据：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">void VecAddCSApp::BuildRootSignature()</span><br><span class="line">&#123;</span><br><span class="line">	</span><br><span class="line">	CD3DX12_ROOT_PARAMETER slotRootParameter[8];</span><br><span class="line"></span><br><span class="line">	slotRootParameter[0].InitAsUnorderedAccessView(0);</span><br><span class="line">	slotRootParameter[1].InitAsUnorderedAccessView(1);</span><br><span class="line">	slotRootParameter[2].InitAsUnorderedAccessView(2);</span><br><span class="line">	slotRootParameter[3].InitAsShaderResourceView(0);</span><br><span class="line">	slotRootParameter[4].InitAsShaderResourceView(1);</span><br><span class="line">	slotRootParameter[5].InitAsConstantBufferView(0);</span><br><span class="line">	slotRootParameter[6].InitAsUnorderedAccessView(3);</span><br><span class="line">	slotRootParameter[7].InitAsConstants(4, 1);</span><br><span class="line"></span><br><span class="line">	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(8, slotRootParameter,</span><br><span class="line">		0, nullptr,</span><br><span class="line">		D3D12_ROOT_SIGNATURE_FLAG_NONE);</span><br><span class="line">	...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>设置HLSL函数：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">void VecAddCSApp::BuildShadersAndInputLayout()</span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line">	mShaders[&quot;standardVS&quot;] = d3dUtil::CompileShader(L&quot;Shaders\\color.hlsl&quot;, nullptr, &quot;VS&quot;, &quot;vs_5_0&quot;);</span><br><span class="line">	mShaders[&quot;opaquePS&quot;] = d3dUtil::CompileShader(L&quot;Shaders\\color.hlsl&quot;, nullptr, &quot;PS&quot;, &quot;ps_5_0&quot;);</span><br><span class="line"></span><br><span class="line">	mInputLayout =</span><br><span class="line">	&#123;</span><br><span class="line">		&#123; &quot;POSITION&quot;, 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 &#125;,</span><br><span class="line">		&#123; &quot;COLOR&quot;, 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 &#125;</span><br><span class="line">	&#125;;</span><br><span class="line"></span><br><span class="line">	mShaders[&quot;UpdateIndexMapCS&quot;] = d3dUtil::CompileShader(L&quot;Shaders\\Grid.hlsl&quot;, nullptr, &quot;UpdateIndexMap&quot;, &quot;cs_5_0&quot;);</span><br><span class="line">	mShaders[&quot;ClearTableCS&quot;] = d3dUtil::CompileShader(L&quot;Shaders\\Grid.hlsl&quot;, nullptr, &quot;ClearTable&quot;, &quot;cs_5_0&quot;);</span><br><span class="line">	mShaders[&quot;UpdateTableCS&quot;] = d3dUtil::CompileShader(L&quot;Shaders\\Grid.hlsl&quot;, nullptr, &quot;UpdateTable&quot;, &quot;cs_5_0&quot;);</span><br><span class="line"></span><br><span class="line">	// BitonicSort</span><br><span class="line">	mShaders[&quot;BitonicSortCS&quot;] = d3dUtil::CompileShader(L&quot;Shaders\\Sort.hlsl&quot;, nullptr, &quot;BitonicSort&quot;, &quot;cs_5_0&quot;);</span><br><span class="line">	mShaders[&quot;MatrixTransposeCS&quot;] = d3dUtil::CompileShader(L&quot;Shaders\\Sort.hlsl&quot;, nullptr, &quot;MatrixTranspose&quot;, &quot;cs_5_0&quot;);</span><br><span class="line">	mShaders[&quot;FillCS&quot;] = d3dUtil::CompileShader(L&quot;Shaders\\Sort.hlsl&quot;, nullptr, &quot;Fill&quot;, &quot;cs_5_0&quot;);</span><br><span class="line">	mShaders[&quot;CopyCS&quot;] = d3dUtil::CompileShader(L&quot;Shaders\\Sort.hlsl&quot;, nullptr, &quot;Copy&quot;, &quot;cs_5_0&quot;);</span><br><span class="line"></span><br><span class="line">	// SPH</span><br><span class="line">	mShaders[&quot;PredictPosCS&quot;] = d3dUtil::CompileShader(L&quot;Shaders\\PDB2.hlsl&quot;, nullptr, &quot;PredictPos&quot;, &quot;cs_5_0&quot;);</span><br><span class="line">	mShaders[&quot;ComputeDensityCS&quot;] = d3dUtil::CompileShader(L&quot;Shaders\\PDB2.hlsl&quot;, nullptr, &quot;ComputeDensity&quot;, &quot;cs_5_0&quot;);</span><br><span class="line">	mShaders[&quot;SolveConstraintCS&quot;] = d3dUtil::CompileShader(L&quot;Shaders\\PDB2.hlsl&quot;, nullptr, &quot;SolveConstraint&quot;, &quot;cs_5_0&quot;);</span><br><span class="line">	mShaders[&quot;UpdateVelocitiesCS&quot;] = d3dUtil::CompileShader(L&quot;Shaders\\PDB2.hlsl&quot;, nullptr, &quot;UpdateVelocities&quot;, &quot;cs_5_0&quot;);</span><br><span class="line">	mShaders[&quot;SolveViscosityCS&quot;] = d3dUtil::CompileShader(L&quot;Shaders\\PDB2.hlsl&quot;, nullptr, &quot;SolveViscosity&quot;, &quot;cs_5_0&quot;);</span><br><span class="line">	mShaders[&quot;UpdatePositionsCS&quot;] = d3dUtil::CompileShader(L&quot;Shaders\\PDB2.hlsl&quot;, nullptr, &quot;UpdatePositions&quot;, &quot;cs_5_0&quot;);</span><br><span class="line">	mShaders[&quot;ComputePsiCS&quot;] = d3dUtil::CompileShader(L&quot;Shaders\\PDB2.hlsl&quot;, nullptr, &quot;ComputePsi&quot;, &quot;cs_5_0&quot;);</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>当然，后续还要设置PSO，这里不再赘述。</p>
+<p>最为重要的逻辑在Draw函数中：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br><span class="line">208</span><br><span class="line">209</span><br><span class="line">210</span><br><span class="line">211</span><br><span class="line">212</span><br><span class="line">213</span><br><span class="line">214</span><br><span class="line">215</span><br><span class="line">216</span><br><span class="line">217</span><br><span class="line">218</span><br><span class="line">219</span><br><span class="line">220</span><br><span class="line">221</span><br><span class="line">222</span><br><span class="line">223</span><br><span class="line">224</span><br><span class="line">225</span><br><span class="line">226</span><br><span class="line">227</span><br><span class="line">228</span><br><span class="line">229</span><br><span class="line">230</span><br><span class="line">231</span><br><span class="line">232</span><br><span class="line">233</span><br><span class="line">234</span><br><span class="line">235</span><br><span class="line">236</span><br><span class="line">237</span><br><span class="line">238</span><br><span class="line">239</span><br><span class="line">240</span><br><span class="line">241</span><br><span class="line">242</span><br><span class="line">243</span><br><span class="line">244</span><br><span class="line">245</span><br><span class="line">246</span><br><span class="line">247</span><br><span class="line">248</span><br><span class="line">249</span><br><span class="line">250</span><br><span class="line">251</span><br><span class="line">252</span><br><span class="line">253</span><br><span class="line">254</span><br><span class="line">255</span><br><span class="line">256</span><br><span class="line">257</span><br><span class="line">258</span><br><span class="line">259</span><br><span class="line">260</span><br><span class="line">261</span><br><span class="line">262</span><br><span class="line">263</span><br><span class="line">264</span><br></pre></td><td class="code"><pre><span class="line">void VecAddCSApp::Draw(const GameTimer&amp; gt)</span><br><span class="line">&#123;</span><br><span class="line">	</span><br><span class="line">	// 添加计算着色器代码</span><br><span class="line">	// Reuse the memory associated with command recording.</span><br><span class="line">	// We can only reset when the associated command lists have finished execution on the GPU.</span><br><span class="line">	ThrowIfFailed(mDirectCmdListAlloc-&gt;Reset());</span><br><span class="line"></span><br><span class="line">	auto sphConstants = mCurrFrameResource-&gt;mSPHConstants-&gt;Resource();</span><br><span class="line"></span><br><span class="line">	// A command list can be reset after it has been added to the command queue via ExecuteCommandList.</span><br><span class="line">	// Reusing the command list reuses memory.</span><br><span class="line">	//（1）填充IndexMap</span><br><span class="line">	ThrowIfFailed(mCommandList-&gt;Reset(mDirectCmdListAlloc.Get(), mPSOs[&quot;UpdateIndexMapCS&quot;].Get()));</span><br><span class="line">	mCommandList-&gt;SetComputeRootSignature(mRootSignature.Get());</span><br><span class="line"></span><br><span class="line">	mCommandList-&gt;SetComputeRootUnorderedAccessView(0, mIndexMap-&gt;GetGPUVirtualAddress());</span><br><span class="line">	mCommandList-&gt;SetComputeRootUnorderedAccessView(1, mTable-&gt;GetGPUVirtualAddress());</span><br><span class="line"></span><br><span class="line">	mCommandList-&gt;SetComputeRootShaderResourceView(3, mFluidParticles_Buffer-&gt;GetGPUVirtualAddress());</span><br><span class="line">	mCommandList-&gt;SetComputeRootShaderResourceView(4, mBoundaryParticles_Buffer-&gt;GetGPUVirtualAddress());</span><br><span class="line"></span><br><span class="line">	mCommandList-&gt;SetComputeRootConstantBufferView(5, sphConstants-&gt;GetGPUVirtualAddress());</span><br><span class="line">	mCommandList-&gt;SetComputeRootUnorderedAccessView(6, mDebug-&gt;GetGPUVirtualAddress());</span><br><span class="line"></span><br><span class="line">	int dispatchX = (mSPH.get()-&gt;mSPHConstants.TotalParticles / 128) + 1;</span><br><span class="line">	mCommandList-&gt;Dispatch(dispatchX, 1, 1);</span><br><span class="line"></span><br><span class="line">	mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::Transition(mIndexMap.Get(),</span><br><span class="line">		D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON));</span><br><span class="line">	//mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::UAV(mIndexMap.Get()));</span><br><span class="line">	mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::UAV(mTable.Get()));</span><br><span class="line">	mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::UAV(mDebug.Get()));</span><br><span class="line">	mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::Transition(mFluidParticles_Buffer.Get(),</span><br><span class="line">		D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS));</span><br><span class="line">	</span><br><span class="line">	</span><br><span class="line">	//（2）排序</span><br><span class="line">	int x, y, z;</span><br><span class="line">	mCommandList-&gt;SetPipelineState(mPSOs[&quot;FillCS&quot;].Get());</span><br><span class="line">	int level = 0;</span><br><span class="line">	int levelMask = 0;</span><br><span class="line">	int width = mSPH.get()-&gt;mSort-&gt;Count;</span><br><span class="line">	int height = 0;</span><br><span class="line"></span><br><span class="line">	mCommandList-&gt;SetComputeRoot32BitConstants(7, 1, &amp;level, 0);</span><br><span class="line">	mCommandList-&gt;SetComputeRoot32BitConstants(7, 1, &amp;levelMask, 1);</span><br><span class="line">	mCommandList-&gt;SetComputeRoot32BitConstants(7, 1, &amp;width, 2);</span><br><span class="line">	mCommandList-&gt;SetComputeRoot32BitConstants(7, 1, &amp;height, 3);</span><br><span class="line">	// Data  : mGPUSortBuffer1</span><br><span class="line">	// Input : mIndexMap</span><br><span class="line">	mCommandList-&gt;SetComputeRootUnorderedAccessView(0, mGPUSortBuffer1-&gt;GetGPUVirtualAddress());</span><br><span class="line">	mCommandList-&gt;SetComputeRootShaderResourceView(3, mIndexMap-&gt;GetGPUVirtualAddress());</span><br><span class="line">	x = mSPH.get()-&gt;mSort-&gt;NumElements / mSPH.get()-&gt;mSort-&gt;THREADS;</span><br><span class="line">	mCommandList-&gt;Dispatch(x, 1, 1);</span><br><span class="line">	mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::UAV(mGPUSortBuffer1.Get()));</span><br><span class="line">	mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::UAV(mDebug.Get()));</span><br><span class="line">	</span><br><span class="line">	height = mSPH.get()-&gt;mSort-&gt;MATRIX_HEIGHT;</span><br><span class="line">	width = mSPH.get()-&gt;mSort-&gt;MATRIX_WIDTH;</span><br><span class="line">	mCommandList-&gt;SetComputeRoot32BitConstants(7, 1, &amp;width, 2);</span><br><span class="line">	mCommandList-&gt;SetComputeRoot32BitConstants(7, 1, &amp;height, 3);</span><br><span class="line">	for (int l = 2; l &lt;= mSPH.get()-&gt;mSort-&gt;BITONIC_BLOCK_SIZE; l = l * 2)</span><br><span class="line">	&#123;</span><br><span class="line">		mCommandList-&gt;SetPipelineState(mPSOs[&quot;BitonicSortCS&quot;].Get());</span><br><span class="line">		// Sort the row data</span><br><span class="line">		level = l;</span><br><span class="line">		levelMask = level;</span><br><span class="line">		mCommandList-&gt;SetComputeRoot32BitConstants(7, 1, &amp;level, 0);</span><br><span class="line">		mCommandList-&gt;SetComputeRoot32BitConstants(7, 1, &amp;levelMask, 1);</span><br><span class="line">		x = mSPH.get()-&gt;mSort-&gt;NumElements / mSPH.get()-&gt;mSort-&gt;BITONIC_BLOCK_SIZE;</span><br><span class="line">		mCommandList-&gt;Dispatch(x, 1, 1);</span><br><span class="line">		//添加资源屏障</span><br><span class="line">		mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::UAV(mGPUSortBuffer1.Get()));</span><br><span class="line">		mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::UAV(mDebug.Get()));</span><br><span class="line">	&#125;</span><br><span class="line">	</span><br><span class="line">	// Then sort the rows and columns for the levels &gt; than the block size</span><br><span class="line">	// Transpose. Sort the Columns. Transpose. Sort the Rows.</span><br><span class="line">	for (int l = (mSPH.get()-&gt;mSort-&gt;BITONIC_BLOCK_SIZE * 2); l &lt;= mSPH.get()-&gt;mSort-&gt;NumElements; l = l * 2)</span><br><span class="line">	&#123;</span><br><span class="line">		//（a）Transpose the data from buffer 1 into buffer 2</span><br><span class="line">		mCommandList-&gt;SetPipelineState(mPSOs[&quot;MatrixTransposeCS&quot;].Get());</span><br><span class="line">		level = l / mSPH.get()-&gt;mSort-&gt;BITONIC_BLOCK_SIZE;</span><br><span class="line">		levelMask = (l &amp; ~mSPH.get()-&gt;mSort-&gt;NumElements) / mSPH.get()-&gt;mSort-&gt;BITONIC_BLOCK_SIZE;</span><br><span class="line">		mCommandList-&gt;SetComputeRoot32BitConstants(7, 1, &amp;level, 0);</span><br><span class="line">		mCommandList-&gt;SetComputeRoot32BitConstants(7, 1, &amp;levelMask, 1);</span><br><span class="line">		mCommandList-&gt;SetComputeRoot32BitConstants(7, 1, &amp;width, 2);</span><br><span class="line">		mCommandList-&gt;SetComputeRoot32BitConstants(7, 1, &amp;height, 3);</span><br><span class="line">		// 转换状态</span><br><span class="line">		mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::Transition(mGPUSortBuffer1.Get(),</span><br><span class="line">			D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON));</span><br><span class="line">		// Data  : mGPUSortBuffer2：UAV</span><br><span class="line">		// Input : mGPUSortBuffer1: SRV</span><br><span class="line">		mCommandList-&gt;SetComputeRootUnorderedAccessView(0, mGPUSortBuffer2-&gt;GetGPUVirtualAddress());</span><br><span class="line">		mCommandList-&gt;SetComputeRootShaderResourceView(3, mGPUSortBuffer1-&gt;GetGPUVirtualAddress());</span><br><span class="line"></span><br><span class="line">		x = mSPH.get()-&gt;mSort-&gt;MATRIX_WIDTH / mSPH.get()-&gt;mSort-&gt;TRANSPOSE_BLOCK_SIZE;</span><br><span class="line">		y = mSPH.get()-&gt;mSort-&gt;MATRIX_HEIGHT / mSPH.get()-&gt;mSort-&gt;TRANSPOSE_BLOCK_SIZE;</span><br><span class="line">		mCommandList-&gt;Dispatch(x, y, 1);</span><br><span class="line">		// 资源屏障</span><br><span class="line">		mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::UAV(mGPUSortBuffer2.Get()));</span><br><span class="line">		mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::UAV(mDebug.Get()));</span><br><span class="line"></span><br><span class="line">		// break;</span><br><span class="line">		//（b）Sort the transposed column data</span><br><span class="line">		mCommandList-&gt;SetPipelineState(mPSOs[&quot;BitonicSortCS&quot;].Get());</span><br><span class="line">		mCommandList-&gt;SetComputeRootUnorderedAccessView(0, mGPUSortBuffer2-&gt;GetGPUVirtualAddress());</span><br><span class="line">		mCommandList-&gt;Dispatch(mSPH.get()-&gt;mSort-&gt;NumElements / mSPH.get()-&gt;mSort-&gt;BITONIC_BLOCK_SIZE, 1, 1);</span><br><span class="line">		// 资源屏障</span><br><span class="line">		mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::UAV(mGPUSortBuffer2.Get()));</span><br><span class="line">		mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::UAV(mDebug.Get()));</span><br><span class="line"></span><br><span class="line">		// （c）Transpose the data from buffer 2 back into buffer 1</span><br><span class="line">		mCommandList-&gt;SetPipelineState(mPSOs[&quot;MatrixTransposeCS&quot;].Get());</span><br><span class="line">		level = mSPH.get()-&gt;mSort-&gt;BITONIC_BLOCK_SIZE;</span><br><span class="line">		levelMask = l;</span><br><span class="line">		mCommandList-&gt;SetComputeRoot32BitConstants(7, 1, &amp;level, 0);</span><br><span class="line">		mCommandList-&gt;SetComputeRoot32BitConstants(7, 1, &amp;levelMask, 1);</span><br><span class="line">		mCommandList-&gt;SetComputeRoot32BitConstants(7, 1, &amp;height, 2);</span><br><span class="line">		mCommandList-&gt;SetComputeRoot32BitConstants(7, 1, &amp;width, 3);</span><br><span class="line">		// 转换状态</span><br><span class="line">		mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::Transition(mGPUSortBuffer1.Get(),</span><br><span class="line">			D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS));</span><br><span class="line">		mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::Transition(mGPUSortBuffer2.Get(),</span><br><span class="line">			D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON));</span><br><span class="line">		// Data  : mGPUSortBuffer1: UAV</span><br><span class="line">		// Input : mGPUSortBuffer2: SRV</span><br><span class="line">		mCommandList-&gt;SetComputeRootUnorderedAccessView(0, mGPUSortBuffer1-&gt;GetGPUVirtualAddress());</span><br><span class="line">		mCommandList-&gt;SetComputeRootShaderResourceView(3, mGPUSortBuffer2-&gt;GetGPUVirtualAddress());</span><br><span class="line">		x = mSPH.get()-&gt;mSort-&gt;MATRIX_HEIGHT / mSPH.get()-&gt;mSort-&gt;TRANSPOSE_BLOCK_SIZE;</span><br><span class="line">		y = mSPH.get()-&gt;mSort-&gt;MATRIX_WIDTH / mSPH.get()-&gt;mSort-&gt;TRANSPOSE_BLOCK_SIZE;</span><br><span class="line">		mCommandList-&gt;Dispatch(x, y, 1);</span><br><span class="line">		// 资源屏障</span><br><span class="line">		mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::UAV(mGPUSortBuffer1.Get()));</span><br><span class="line">		mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::UAV(mDebug.Get()));</span><br><span class="line"></span><br><span class="line">		// （d）Sort the row data</span><br><span class="line">		mCommandList-&gt;SetPipelineState(mPSOs[&quot;BitonicSortCS&quot;].Get());</span><br><span class="line">		mCommandList-&gt;SetComputeRootUnorderedAccessView(0, mGPUSortBuffer1-&gt;GetGPUVirtualAddress());</span><br><span class="line">		mCommandList-&gt;Dispatch(mSPH.get()-&gt;mSort-&gt;NumElements / mSPH.get()-&gt;mSort-&gt;BITONIC_BLOCK_SIZE, 1, 1);</span><br><span class="line">		// 资源屏障</span><br><span class="line">		mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::UAV(mGPUSortBuffer1.Get()));</span><br><span class="line">		mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::UAV(mDebug.Get()));</span><br><span class="line"></span><br><span class="line">		// 收尾。转换状态，以便下一次循环正常</span><br><span class="line">		mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::Transition(mGPUSortBuffer2.Get(),</span><br><span class="line">			D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS));</span><br><span class="line">	&#125;</span><br><span class="line">	mCommandList-&gt;SetPipelineState(mPSOs[&quot;CopyCS&quot;].Get());</span><br><span class="line">	width = mSPH.get()-&gt;mSort-&gt;Count;</span><br><span class="line">	mCommandList-&gt;SetComputeRoot32BitConstants(7, 1, &amp;width, 2);</span><br><span class="line">	// 转换状态</span><br><span class="line">	mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::Transition(mIndexMap.Get(),</span><br><span class="line">		D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS));</span><br><span class="line">	mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::Transition(mGPUSortBuffer1.Get(),</span><br><span class="line">		D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON));</span><br><span class="line">	// Data  : mIndexMap</span><br><span class="line">	// Input : mGPUSortBuffer1</span><br><span class="line">	mCommandList-&gt;SetComputeRootUnorderedAccessView(0, mIndexMap-&gt;GetGPUVirtualAddress());</span><br><span class="line">	mCommandList-&gt;SetComputeRootShaderResourceView(3, mGPUSortBuffer1-&gt;GetGPUVirtualAddress());</span><br><span class="line">	mCommandList-&gt;Dispatch(mSPH.get()-&gt;mSort-&gt;NumElements / mSPH.get()-&gt;mSort-&gt;THREADS, 1, 1);</span><br><span class="line">	// 资源屏障</span><br><span class="line">	mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::UAV(mIndexMap.Get()));</span><br><span class="line">	mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::UAV(mDebug.Get()));</span><br><span class="line">	//（3）</span><br><span class="line">	mCommandList-&gt;SetPipelineState(mPSOs[&quot;ClearTableCS&quot;].Get());</span><br><span class="line">	mCommandList-&gt;SetComputeRootUnorderedAccessView(1, mTable-&gt;GetGPUVirtualAddress());</span><br><span class="line">	mCommandList-&gt;Dispatch(dispatchX, 1, 1);</span><br><span class="line">	mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::UAV(mTable.Get()));</span><br><span class="line">	mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::UAV(mDebug.Get()));</span><br><span class="line"></span><br><span class="line">	//（4）</span><br><span class="line">	mCommandList-&gt;SetPipelineState(mPSOs[&quot;UpdateTableCS&quot;].Get());</span><br><span class="line">	mCommandList-&gt;SetComputeRootUnorderedAccessView(0, mIndexMap-&gt;GetGPUVirtualAddress());</span><br><span class="line">	mCommandList-&gt;SetComputeRootUnorderedAccessView(1, mTable-&gt;GetGPUVirtualAddress());</span><br><span class="line">	mCommandList-&gt;Dispatch(dispatchX, 1, 1);</span><br><span class="line">	mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::UAV(mIndexMap.Get()));</span><br><span class="line">	mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::UAV(mTable.Get()));</span><br><span class="line">	mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::UAV(mDebug.Get()));</span><br><span class="line"></span><br><span class="line">	// (5) PDB</span><br><span class="line">	// (5-0) ComputePsi</span><br><span class="line">	mCommandList-&gt;SetPipelineState(mPSOs[&quot;ComputePsiCS&quot;].Get());</span><br><span class="line">	mCommandList-&gt;SetComputeRootUnorderedAccessView(0, mFluidParticles_Buffer-&gt;GetGPUVirtualAddress());</span><br><span class="line">	mCommandList-&gt;SetComputeRootUnorderedAccessView(1, mBoundaryParticles_Buffer-&gt;GetGPUVirtualAddress());</span><br><span class="line">	mCommandList-&gt;SetComputeRootUnorderedAccessView(6, mDebug-&gt;GetGPUVirtualAddress());</span><br><span class="line">	mCommandList-&gt;SetComputeRootShaderResourceView(3, mIndexMap-&gt;GetGPUVirtualAddress());</span><br><span class="line">	mCommandList-&gt;SetComputeRootShaderResourceView(4, mTable-&gt;GetGPUVirtualAddress());</span><br><span class="line">	mCommandList-&gt;SetComputeRootConstantBufferView(5, sphConstants-&gt;GetGPUVirtualAddress());</span><br><span class="line">	mCommandList-&gt;Dispatch(dispatchX, 1, 1);</span><br><span class="line">	mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::UAV(mBoundaryParticles_Buffer.Get()));</span><br><span class="line">	mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::UAV(mDebug.Get()));</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">	// (5-a) PredictPos</span><br><span class="line">	mCommandList-&gt;SetPipelineState(mPSOs[&quot;PredictPosCS&quot;].Get());</span><br><span class="line">	mCommandList-&gt;Dispatch(dispatchX, 1, 1);</span><br><span class="line">	mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::UAV(mFluidParticles_Buffer.Get()));</span><br><span class="line">	mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::UAV(mDebug.Get()));</span><br><span class="line"></span><br><span class="line">	// (5-b) ComputeDensity</span><br><span class="line">	mCommandList-&gt;SetPipelineState(mPSOs[&quot;ComputeDensityCS&quot;].Get());</span><br><span class="line">	mCommandList-&gt;Dispatch(dispatchX, 1, 1);</span><br><span class="line">	mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::UAV(mFluidParticles_Buffer.Get()));</span><br><span class="line">	mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::UAV(mDebug.Get()));</span><br><span class="line"></span><br><span class="line">	</span><br><span class="line">	// (5-c) SolveConstraint</span><br><span class="line">	mCommandList-&gt;SetPipelineState(mPSOs[&quot;SolveConstraintCS&quot;].Get());</span><br><span class="line">	mCommandList-&gt;Dispatch(dispatchX, 1, 1);</span><br><span class="line">	mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::UAV(mFluidParticles_Buffer.Get()));</span><br><span class="line">	mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::UAV(mDebug.Get()));</span><br><span class="line"></span><br><span class="line">	// (3-4) UpdateVelocities</span><br><span class="line">	mCommandList-&gt;SetPipelineState(mPSOs[&quot;UpdateVelocitiesCS&quot;].Get());</span><br><span class="line">	mCommandList-&gt;Dispatch(dispatchX, 1, 1);</span><br><span class="line">	mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::UAV(mFluidParticles_Buffer.Get()));</span><br><span class="line">	mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::UAV(mDebug.Get()));</span><br><span class="line"></span><br><span class="line">	// (3-5) SolveViscosity</span><br><span class="line">	mCommandList-&gt;SetPipelineState(mPSOs[&quot;SolveViscosityCS&quot;].Get());</span><br><span class="line">	mCommandList-&gt;Dispatch(dispatchX, 1, 1);</span><br><span class="line">	mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::UAV(mFluidParticles_Buffer.Get()));</span><br><span class="line">	mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::UAV(mDebug.Get()));</span><br><span class="line"></span><br><span class="line">	// (3-6) UpdatePositions</span><br><span class="line">	mCommandList-&gt;SetPipelineState(mPSOs[&quot;UpdatePositionsCS&quot;].Get());</span><br><span class="line">	mCommandList-&gt;Dispatch(dispatchX, 1, 1);</span><br><span class="line">	mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::UAV(mFluidParticles_Buffer.Get()));</span><br><span class="line">	mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::UAV(mDebug.Get()));</span><br><span class="line">	</span><br><span class="line"></span><br><span class="line">	// Schedule to copy the data to the default buffer to the readback buffer.</span><br><span class="line">	mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::Transition(mFluidParticles_Buffer.Get(),</span><br><span class="line">		D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COPY_SOURCE));</span><br><span class="line">	mCommandList-&gt;CopyResource(mReadBackBuffer.Get(), mFluidParticles_Buffer.Get());</span><br><span class="line">	mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::Transition(mFluidParticles_Buffer.Get(),</span><br><span class="line">		D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS));</span><br><span class="line">	</span><br><span class="line">	mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::Transition(mIndexMap.Get(),</span><br><span class="line">		D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COPY_SOURCE));</span><br><span class="line">	mCommandList-&gt;CopyResource(mIndexMapBack.Get(), mIndexMap.Get());</span><br><span class="line">	mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::Transition(mIndexMap.Get(),</span><br><span class="line">		D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS));</span><br><span class="line"></span><br><span class="line">	mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::Transition(mDebug.Get(),</span><br><span class="line">		D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COPY_SOURCE));</span><br><span class="line">	mCommandList-&gt;CopyResource(mDebugBack.Get(), mDebug.Get());</span><br><span class="line">	mCommandList-&gt;ResourceBarrier(1, &amp;CD3DX12_RESOURCE_BARRIER::Transition(mDebug.Get(),</span><br><span class="line">		D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS));</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">	// Done recording commands.</span><br><span class="line">	ThrowIfFailed(mCommandList-&gt;Close());</span><br><span class="line">	// Add the command list to the queue for execution.</span><br><span class="line">	ID3D12CommandList* cmdsLists1[] = &#123; mCommandList.Get() &#125;;</span><br><span class="line">	mCommandQueue-&gt;ExecuteCommandLists(_countof(cmdsLists1), cmdsLists1);</span><br><span class="line">	// Wait for the work to finish.</span><br><span class="line">	FlushCommandQueue();</span><br><span class="line"></span><br><span class="line">	...</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>最近忙毕业，时间太紧张，QAQ，后续会将详细内容补充上来……</p>
+<p>[1] Macklin, Miles, and Matthias Müller. &quot;Position based fluids.&quot; ACM Transactions on Graphics (TOG) 32.4 (2013): 104.</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2023/10/26/%E8%BD%AF%E5%85%89%E6%A0%85%E6%B8%B2%E6%9F%93%E5%99%A8/" rel="prev" title="软光栅渲染器">
+      <i class="fa fa-chevron-left"></i> 软光栅渲染器
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#position-based-dynamic"><span class="nav-number">1.</span> <span class="nav-text">Position Based Dynamic</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">1.1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#pbd%E5%9F%BA%E6%9C%AC%E6%B5%81%E7%A8%8B"><span class="nav-number">1.2.</span> <span class="nav-text">PBD基本流程</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#position-based-fluids"><span class="nav-number">2.</span> <span class="nav-text">Position Based Fluids</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#d3d%E4%B8%8A%E7%9A%84%E6%B5%81%E4%BD%93%E6%A8%A1%E6%8B%9F"><span class="nav-number">3.</span> <span class="nav-text">D3D上的流体模拟</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">simplify</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">4</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">simplify</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>
