@@ -220,7 +220,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2023/10/28/WaterRendering_PDF/">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2023/10/28/WaterRendering_PBF/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -234,7 +234,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2023/10/28/WaterRendering_PDF/" class="post-title-link" itemprop="url">流体模拟——Position Based Fluids</a>
+            <a href="/2023/10/28/WaterRendering_PBF/" class="post-title-link" itemprop="url">流体模拟——Position Based Fluids</a>
         </h2>
 
         <div class="post-meta">
@@ -268,7 +268,7 @@
           <p>初次接触流体模拟还是在游戏程序设计这门课上，这门课的大作业是一个小组合作项目，要求基于Unity或UE开发一款游戏，最好实现一个算法。一筹莫展之际，朋友提到他看到的一位前辈关于流体模拟的一系列文章<a target="_blank" rel="noopener" href="https://blog.csdn.net/qq_39300235/article/details/100981656?spm=1001.2014.3001.5501">SPH（光滑粒子流体动力学）流体模拟实现：算法总览_sph算法计算流体-CSDN博客</a>……2019到2020年跨年的那一周，在我们在学院，三个人实现了最简单的流体模拟部分，做了一个非常简单的小游戏。这个项目以后有机会也会添加进来。在这个小游戏完成之际，我就产生了一些困惑，像是如何保证流体不可压缩、如何处理与其他物体的碰撞……很可惜，这些困惑搁置了许久，我也在不知不觉中渐渐远离了图形学和游戏开发。再到后来（此处省略许多经历QAQ），我跌跌撞撞地又回到了喜欢的方向上。在前辈的建议下，学习了Direct3D 12。在寻找几个练习项目时，又发现了一些非常优秀的前辈的项目，又看到了熟悉的SPH。一面是为了给自己找工作的时候添加一些项目经验，一面是弥补前些年留下的遗憾，我在D3D上用Computer Shader又实现了一次流体模拟。不同的是，这次实现的是基于PBD（Postion Based Dynamic）优化的SPH算法——PBF，也将部分计算从CPU搬到了GPU上。这篇博客将从PBD、PBF、D3D上PBF实现，这三个部分进行介绍。</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2023/10/28/WaterRendering_PDF/#more" rel="contents">
+              <a class="btn" href="/2023/10/28/WaterRendering_PBF/#more" rel="contents">
                 Read more &raquo;
               </a>
             </div>
