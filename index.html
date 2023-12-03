@@ -176,7 +176,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2023-12-04 00:01:49" itemprop="dateModified" datetime="2023-12-04T00:01:49+08:00">2023-12-04</time>
+                <time title="Modified: 2023-12-04 00:08:41" itemprop="dateModified" datetime="2023-12-04T00:08:41+08:00">2023-12-04</time>
               </span>
 
           
@@ -190,65 +190,18 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h1 id="ue5源码安装android打包">UE5源码安装、Android打包</h1>
-<h2 id="源码安装">1. 源码安装</h2>
-<p>UE5的源码安装需要相当大的空间，需要预留足够大的内存（约200-300G）。</p>
-<p>Epic所提供的Unreal代码仓库是私有库，需要加入Epic仓库才能拉取源代码。按照官网提示流程（<a target="_blank" rel="noopener" href="https://www.unrealengine.com/zh-CN/ue-on-github">GitHub上的虚幻引擎 - Unreal Engine</a>）操作即可。如果使用git拉取代码失败，可以下载zip包然后解压。</p>
-<p>进入UE5的下载目录，双击运行Setup.bat文件，下载第三方库等其他内容。</p>
-<p>双击运行GenerateProjectFiles.bat文件生成VS工程文件。对于UE5和VS的版本匹配，可以查看<a target="_blank" rel="noopener" href="https://docs.unrealengine.com/5.3/zh-CN/setting-up-visual-studio-development-environment-for-cplusplus-projects-in-unreal-engine/">为虚幻引擎C++项目设置Visual Studio开发环境 | 虚幻引擎5.3文档 (unrealengine.com)</a>。推荐使用VS2022。</p>
-<p>接下来进行编译：</p>
-<p>在Visual Studio中将解决方案配置设置为“Development Editor”模式。</p>
-<p>将解决方案平台设置为 Win64。</p>
-<p>在“解决方案资源管理器”中找到UE5，点击右键并将其设置为启动项。</p>
-<p>在“解决方案资源管理器”中找到UE5，点击右键并将“Build”。</p>
-<p>等待编译完成……</p>
-<p>编译完成后，启用调试，即可使用UE5。</p>
-<h2 id="android打包">2. Android打包</h2>
-<p>UE5和Anroid Studio之间的版本匹配问题见<a target="_blank" rel="noopener" href="https://docs.unrealengine.com/5.3/zh-CN/android-development-requirements-for-unreal-engine/">虚幻引擎Android开发要求 | 虚幻引擎5.3文档 (unrealengine.com)</a>。上述网站显示，UE5.3的匹配版本是Flamigo 2022.2.1 Patch 2 May 24, 2023。实测Giraffe也可以打包成功。</p>
-<p>打包这一步按照官网流程即可：<a target="_blank" rel="noopener" href="https://docs.unrealengine.com/5.3/zh-CN/android-support-for-unreal-engine/">Android Support for Unreal Engine | 虚幻引擎5.3文档</a>。但是有几个问题需要注意：</p>
-<p>问题一：Android SDK Command-line Tools (latest)</p>
-<p>官网教程提示安装最新（lastest）版本，而SetupAndroid.bat文件中的最新版本实际上指的是8.0版本。但是Android SDK Command-line Tools的最新版本早已不是8.0版本。因此这一步需要安装8.0版本，并修改SetupAndroid.bat文件中的set SDKMANAGER中的lastest为8.0版本；</p>
-<p>问题二：Android Studio下载时，一般为了节省C盘空间，会将其安装到其他盘，这时需要修改SetupAndroid.bat文件</p>
-<p>将SetupAndroid.bat文件中set ANDROID_LOCAL修改为实际安装位置</p>
-<p>问题三：打包时gradle下载失败</p>
-<p>这一般是由于连接外网的问题。可以手动下载对应版本的gradle压缩包，将其放置到下载位置（一般是C盘下），然后重新运行。</p>
-<h1 id="角色控制">角色控制</h1>
-<p>在C++ Classes文件夹中，右键单击New C++ Classes。选择Character作为基类，将类命名为ASTUBaseCharacter。</p>
-<p>新生成的类包含了一些基础的头文件和成员函数。</p>
-<ul>
-<li>头文件
-<ul>
-<li>&quot;CoreMinimal.h&quot;：包含了FString、FName等一些常见的类。</li>
-<li>&quot;GameFramework/Character.h&quot;：Character基类。</li>
-<li>&quot;STUBaseCharacter.generated.h&quot;：引入反射系统，为反射提供一些功能，例如我们下面会看到的一些宏：UCLASS()、UPROPERTY等。该头文件需要放在最后一行。</li>
-</ul></li>
-<li>成员函数
-<ul>
-<li>virtual void BeginPlay()：类开始的时调用的函数；</li>
-<li>virtual void Tick(float DeltaTime) ：每一帧调用的函数；</li>
-<li>virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) ：设置输入与事件的绑定。</li>
-</ul></li>
-</ul>
-<p>主要包含两个部分，一是摄像机的设置，二是人物运动。</p>
-<h2 id="摄像机设置">1. 摄像机设置</h2>
-<p>在头文件中声明摄像机组件和弹簧臂组件，在.cpp文件中创建摄像机和弹簧臂，并将摄像机附到弹簧臂组件上。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">// .h</span><br><span class="line">UPROPERTY(VisibleAnyWhere, BlueprintReadWrite, Category = &quot;Components&quot;)</span><br><span class="line">USpringArmComponent* SpringArmComponent;</span><br><span class="line"></span><br><span class="line">UPROPERTY(VisibleAnyWhere, BlueprintReadWrite, Category = &quot;Components&quot;)</span><br><span class="line">UCameraComponent* CameraComponent;</span><br><span class="line"></span><br><span class="line">// .cpp</span><br><span class="line"></span><br><span class="line">#include &quot;GameFramework/SpringArmComponent.h&quot;</span><br><span class="line">#include &quot;Camera/CameraComponent.h&quot;</span><br><span class="line"></span><br><span class="line">// 构造函数中</span><br><span class="line">SpringArmComponent = CreateDefaultSubobject&lt;USpringArmComponent&gt;(&quot;SpringArmComponent&quot;);</span><br><span class="line">SpringArmComponent-&gt;SetupAttachment(GetRootComponent());</span><br><span class="line">SpringArmComponent-&gt;bUsePawnControlRotation = true;</span><br><span class="line"></span><br><span class="line">CameraComponent = CreateDefaultSubobject&lt;UCameraComponent&gt;(&quot;CameraComponent&quot;);</span><br><span class="line">CameraComponent-&gt;SetupAttachment(SpringArmComponent);</span><br></pre></td></tr></table></figure>
-<p>弹簧臂在第三人称的视角中，是为了防止转动摄像机时，如果发生了摄像机的位置与物体发生了物理碰撞，避免摄像机进入物体内部，二是自动缩小摄像机与角色之间的距离。</p>
-<h2 id="人物运动">2. 人物运动</h2>
-<p>人物的前后左右移动需要绑定输入，需要在UE的“编辑”-&gt;“项目设置”-&gt;“引擎”-&gt;“输入”中添加”轴映射“。</p>
-<p><img src="/images/UE5-demo/Input.JPG" /></p>
-<p>轴映射会不断被轮询，从而实现无缝的移动过渡和流畅的游戏行为，例如长按W键人物可以一直前进。而对应的操作映射则是处理离散事件的输入，例如点击空格键，人物跳跃一次。</p>
-<p>绑定按钮与对应事件：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">// Called to bind functionality to input</span><br><span class="line">void ASTUBaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)</span><br><span class="line">&#123;</span><br><span class="line">	Super::SetupPlayerInputComponent(PlayerInputComponent);</span><br><span class="line">	</span><br><span class="line">	// ASTUBaseCharacter::MoveForward等这四个是成员函数，实现前后移动和转向</span><br><span class="line">	PlayerInputComponent-&gt;BindAxis(&quot;MoveForward&quot;, this, &amp;ASTUBaseCharacter::MoveForward);</span><br><span class="line">	PlayerInputComponent-&gt;BindAxis(&quot;MoveRight&quot;, this, &amp;ASTUBaseCharacter::MoveRight);</span><br><span class="line">	PlayerInputComponent-&gt;BindAxis(&quot;LookUp&quot;, this, &amp;ASTUBaseCharacter::LookUp);</span><br><span class="line">	PlayerInputComponent-&gt;BindAxis(&quot;TurnAround&quot;, this, &amp;ASTUBaseCharacter::TurnAround);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>设置对应事件函数：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">void ASTUBaseCharacter::MoveForward(float Amount)</span><br><span class="line">&#123;</span><br><span class="line">	IsMovingForward = Amount &gt; 0.0f;</span><br><span class="line">	if (Amount == 0.0f) return;</span><br><span class="line">	AddMovementInput(GetActorForwardVector(), Amount);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">void ASTUBaseCharacter::MoveRight(float Amount)</span><br><span class="line">&#123;</span><br><span class="line">	if (Amount == 0.0f) return;</span><br><span class="line">	AddMovementInput(GetActorRightVector(), Amount);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">void ASTUBaseCharacter::LookUp(float Amount)</span><br><span class="line">&#123;</span><br><span class="line">	AddControllerPitchInput(Amount);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">void ASTUBaseCharacter::TurnAround(float Amount)</span><br><span class="line">&#123;</span><br><span class="line">	AddControllerYawInput(Amount);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>AddMovementInput实际上就是通过修改人物的坐标实现的人物移动。</p>
-<p>为了能够实现连续的任务左右转向，使用混合空间对人物从启动到左右转向进行了设置。涉及到四个动画和两个参数（Velocity、Direction）。</p>
-<p><img src="/images/UE5-demo/Blend.JPG" /></p>
-<p>Direction的计算稍有复杂，为了实现左右转向首先要获得人物的前向位置（ForwardDirection）以及人物运动方向（VelocityDiection）。</p>
-<p>借助向量的点乘，可以计算出二者之间的夹角的cos值。左右移动分别设置为正负，可以通过ForwardDirection与VelocityDiection的叉乘计算得到。总体思想为：左右移动根据正负号判断；人物移动方向则根据角度大小来判断，小于90°向前，大于90°向后。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">float ASTUBaseCharacter::GetMovementDirection() const</span><br><span class="line">&#123;</span><br><span class="line">	if (GetVelocity().IsZero()) return 0.0f;</span><br><span class="line">	const auto VelocityNormal = GetVelocity().GetSafeNormal();</span><br><span class="line">	const auto AngleBetween = FMath::Acos(FVector::DotProduct(GetActorForwardVector(), VelocityNormal));</span><br><span class="line">	const auto CrossProduct = FVector::CrossProduct(GetActorForwardVector(), VelocityNormal);</span><br><span class="line">	const auto Degrees = FMath::RadiansToDegrees(AngleBetween);</span><br><span class="line">	return CrossProduct.IsZero() ? Degrees : Degrees * FMath::Sign(CrossProduct.Z);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
+          <p>UE5源码安装、Android打包、Demo展示</p>
+<video id="video" controls="" preload="none">
+<source id="mp4" src="/videos/UE5-demo.mp4" type="video/mp4">
+</video>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2023/12/03/UE%E5%AE%A2%E6%88%B7%E7%AB%AF%E5%BC%80%E5%8F%91demo/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
       
     </div>
 
