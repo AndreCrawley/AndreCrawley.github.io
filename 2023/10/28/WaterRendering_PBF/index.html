@@ -27,10 +27,12 @@
 <meta property="og:site_name" content="Simplify">
 <meta property="og:description" content="初次接触流体模拟还是在游戏程序设计这门课上，这门课的大作业是一个小组合作项目，要求基于Unity或UE开发一款游戏，最好实现一个算法。一筹莫展之际，朋友提到他看到的一位前辈关于流体模拟的一系列文章SPH（光滑粒子流体动力学）流体模拟实现：算法总览_sph算法计算流体-CSDN博客……2019到2020年跨年的那一周，在我们在学院，三个人实现了最简单的流体模拟部分，做了一个非常简单的小游戏。这个项目">
 <meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/images/PBD/SmoothModel.JPG">
 <meta property="article:published_time" content="2023-10-28T07:12:17.000Z">
-<meta property="article:modified_time" content="2023-10-30T17:40:05.759Z">
+<meta property="article:modified_time" content="2023-12-19T08:34:47.095Z">
 <meta property="article:author" content="simplify">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/PBD/SmoothModel.JPG">
 
 <link rel="canonical" href="http://example.com/2023/10/28/WaterRendering_PBF/">
 
@@ -180,7 +182,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2023-10-31 01:40:05" itemprop="dateModified" datetime="2023-10-31T01:40:05+08:00">2023-10-31</time>
+                <time title="Modified: 2023-12-19 16:34:47" itemprop="dateModified" datetime="2023-12-19T16:34:47+08:00">2023-12-19</time>
               </span>
 
           
@@ -206,6 +208,43 @@
 <video id="video" controls="" preload="none">
 <source id="mp4" src="/videos/PBD.mp4" type="video/mp4">
 </video>
+<h1 id="流体模拟概述">流体模拟概述</h1>
+<p>计算机按照离散形式处理数据，而现实世界中的流体不是一帧一帧地运动，而是连续的。如何用计算机来处理现实世界中连续运动的流体是流体模拟首先要解决的问题之一。解决这个问题的方法主要有两个：一是拉格朗日方法，二是欧拉方法。</p>
+<p>拉格朗日方法将流体视为一个个独立的粒子，每个粒子均携带足够多的物理量，通过在每一帧模拟每个粒子的运动实现对流体的模拟。</p>
+<p>欧拉方法则是对空间进行划分，针对空间进行解算，在每一帧计算流体的运动。</p>
+<p>多数现有的流体模拟算法使用在模拟水时使用拉格朗日方法，在模拟烟雾时则使用欧拉方法。</p>
+<p>本文所提到的流体模拟算法是一种拉格朗日方法，在介绍PBF之前，先介绍与其密切相关的SPH算法。</p>
+<h1 id="光滑粒子动力学">光滑粒子动力学</h1>
+<p>光滑粒子动力学（Smoothed Particle Hydrodynamics，SPH）是经典的流体模拟方法。其核心思想是逐粒子计算。“对单个粒子附近区域（半径为r的球型区域）寻找若干邻居粒子，通过一套精妙的函数计算出每个邻居粒子对当前粒子的贡献，以求出当前粒子的部分物理量（例如密度、压强等）。得到了这些物理量以后我们再通过另一套精妙的函数来计算这些粒子在这帧得到的外力，从而推演出这一帧该粒子的受力情况，以及位置、速度、加速度的变化情况。”（这段话讲解的简单透彻，直接引用自这篇文章<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/389120251">基于粒子表示的实时流体模拟与渲染（上） - 知乎 (zhihu.com)</a>）。</p>
+<p>SPH基于光滑模型（Smooth Model），所谓光滑模型可以在这样一个场景下理解：空间中有一组粒子，每个粒子都携带了一组物理量，为了估计空间中任意一点的物理量需要对该点周围粒子的物理量做插值。</p>
+<p><img src="/images/PBD/SmoothModel.JPG" /></p>
+<p>上文提到的精妙的函数即对这些物理量做插值的函数。通常而言，该函数可写为： <span class="math display">\[
+A_i^{smooth}=\frac{1}{n}\sum_{j}V_jA_jW_{ij}
+\]</span> 其中 <span class="math inline">\(V_j\)</span> 为第 <span class="math inline">\(j\)</span> 个粒子的体积，<span class="math inline">\(A_j\)</span> 为第 <span class="math inline">\(j\)</span>个粒子的物理量，<span class="math inline">\(W_{ij}\)</span> 即Smoothing Kernel Function（光滑核函数），也可称为光滑核。</p>
+<p>正如上文所述，粒子的物理量（如密度、压强）是根据粒子领域的邻居粒子计算得到的。而在计算这些物理量时，邻居粒子对中心粒子物理量的贡献随距离增加而减小。这种随距离而衰减的函数被称为“光滑核函数”，最大影响半径为“光滑核半径”。</p>
+<p>光滑核函数主要具有以下几个性质：</p>
+<ol type="1">
+<li>归一性：光滑核函数在支持域上的积分为1；</li>
+<li>紧支域：光滑核函数在支持域外的值为0；</li>
+<li>收敛性：光滑核函数在支持域内任意一点的值不小于0；</li>
+<li>衰减性：光滑核半径增大时，光滑核函数的值应当是单调递减的；</li>
+<li>对称性：光滑核函数应为偶函数；</li>
+<li>光滑性：光滑核函数应当连续。</li>
+</ol>
+<p>流体模拟中主要涉及的3个力为重力、压力和粘滞力。重力加速度是个常量，所以重力易于计算。而压力和粘滞力则需要借助上文提到的光滑模型。</p>
+<p>压力即由压强差产生的力。密度高的位置压强大，若一个粒子四周的压强不均等，则会产生压强差，此时粒子便会受到压力的作用。因此，为了计算压强差，需要对粒子的压强求梯度。 <span class="math display">\[
+F_i^{Pressure}=-V_i\nabla P^{smooth}
+\]</span> 其中 <span class="math inline">\(V_i\)</span> 是粒子体积，体积越大，粒子收到的压力越大，<span class="math inline">\(\nabla P^{smooth}\)</span> 是对压强求梯度，即计算压强差。</p>
+<p>粘滞力产生的效果是让粒子朝同一个方向移动，即减小粒子之间的速度差。 <span class="math display">\[
+F_i^{Viscosity}=-vm_i\triangle_iV^{smooth}
+\]</span> 其中，<span class="math inline">\(v\)</span> 是粘滞系数，<span class="math inline">\(m_i\)</span> 是粒子质量，<span class="math inline">\(\triangle_iV^{smooth}\)</span> 是拉普拉斯算子，该项实际上是在计算一个点与周围邻居的差值。</p>
+<p>有了上述基础，SPH算法中，更新每个粒子位置的基本流程可以总结为：</p>
+<ol type="1">
+<li>计算粒子周围邻居；</li>
+<li>计算重力、压力、粘滞力；</li>
+<li>更新粒子速度；</li>
+<li>更新粒子位置。</li>
+</ol>
 <h2 id="position-based-dynamic">Position Based Dynamic</h2>
 <p>传统的物理模拟常常使用基于力的方法（Force Based），这类方法通过计算物体受力，求解物体加速度，进一步更新物体速度、位置等。对于基于力的方法而言，时间步长越小，数值越稳定，但带来的计算量也就更大。基于力的方法针对每一种动态物体，会有一个独立的解算器（Solver），各种Solver按照一定顺序进行计算，从而得到模拟结果，这样会带来大量冗余工作。基于位置动力学（Position Based Dynamic，PBD）则使用同一种方式表达动态物体，这种方法只需要一个Solver便可以模拟所有物体，并支持它们之间的双向交互效果。PBD直接处理位移，通过求解满足约束函数，来调整每个物体的位置。</p>
 <p>常见的约束有：</p>
@@ -217,33 +256,79 @@
 <li>碰撞约束，计算粒子之间的碰撞反应，比如把粒子从穿透状态解开，计算摩擦力等等</li>
 </ul>
 <h3 id="概述">概述</h3>
-<p>动力学物体由N个顶点和M个约束组成。</p>
-<p>顶点i的质量为mi，位置为xi，速度为vi。</p>
-<p>约束j有五种特性：</p>
+<p>动力学物体由 <span class="math inline">\(N\)</span> 个顶点和 <span class="math inline">\(M\)</span> 个约束组成。</p>
+<p>顶点 <span class="math inline">\(i\in{[1,2,...,N]}\)</span> 的质量为 <span class="math inline">\(m_i\)</span>，位置为 <span class="math inline">\(x_i\)</span>，速度为 <span class="math inline">\(v_i\)</span>。</p>
+<p>约束 <span class="math inline">\(j\in{[1,2,...,N]}\)</span> 有五种特性：</p>
 <ol type="1">
-<li>约束的基数nj；</li>
+<li>约束的基数 <span class="math inline">\(n_j\)</span> ，即第 <span class="math inline">\(j\)</span> 个约束所影响的顶点数；</li>
 <li>约束是实值函数；</li>
-<li>约束索引值为</li>
-<li>每个约束都有对应的刚度参数</li>
+<li>约束索引值为 <span class="math inline">\(\{i_1, i_2, ..., i_{n_j}\}, i_k\in[1, 2, ..,N]\)</span>，即影响到的顶点；</li>
+<li>每个约束都有对应的刚度参数 <span class="math inline">\(k_j\in[0, ..., 1]\)</span> ，可以理解为约束强度；</li>
 <li>约束分为：
 <ol type="1">
-<li>等式约束：</li>
-<li>不等式约束：</li>
+<li>等式约束<span class="math inline">\(C_j(x_{i_1},...,x_{i_{n_j}})=0\)</span>；</li>
+<li>不等式约束<span class="math inline">\(C_j(x_{i_1},...,x_{i_{n_j}})\geq0\)</span>：</li>
 </ol></li>
 </ol>
 <h3 id="pbd基本流程">PBD基本流程</h3>
 <p>PBD的基本流程如下：</p>
 <ol type="1">
 <li>初始化顶点位置、速度和质量倒数；</li>
-<li>将无法转换为位置约束的力（如重力）记为f，并根据f的值进行一次数值积分预测速度vi；</li>
-<li>对速度添加阻尼，然后计算位置预测值；</li>
-<li>生成约束碰撞；</li>
+<li>循环求解：
+<ol type="1">
+<li>用转换为位置约束的力（如重力）更新顶点的速度；</li>
+<li>对速度添加阻尼；</li>
+<li>根据速度计算位置，作为位置的预测值；</li>
+<li>为每个顶点生成碰撞约束；</li>
 <li>对约束进行迭代求解，校正粒子位置；</li>
 <li>更新粒子的位置和速度信息；</li>
-<li>根据摩擦（friction）和恢复（restitution）系数修改速度。</li>
+<li>根据摩擦（friction）和恢复（restitution）系数修正速度。</li>
+</ol></li>
 </ol>
+<p>简单概括就是根据当前速度预测顶点的位置，然后在满足约束求解的条件下，修正顶点的位置和速度。</p>
 <h2 id="position-based-fluids">Position Based Fluids</h2>
-<p>PBD一开始是为模拟固体而设计的，Macklin等人[1]结合SPH插值方法，提出了基于PBD框架的流体模拟方法Position Based Fluids（PBF）。</p>
+<p>PBD一开始是为模拟固体而设计的，Macklin等人[1]结合SPH插值方法，提出了基于PBD框架的流体模拟方法Position Based Fluids（PBF）。PBF算法依然沿用了SPH的光滑模型，但是在求解每一帧粒子的位置和速度时采用了PBD的方案。</p>
+<p>首先介绍流体的不可压缩性。上文提到，PBD方法通过密度约束来模拟流体，即通过密度约束来保证流体不可压缩。在SPH算法中，粒子的密度为： <span class="math display">\[
+\rho_i=\sum_j{V_j\rho_jW_{ij}}=\sum_j{\frac{m_j}{\rho_j}\rho_jW_{ij}}=\sum_jm_jW_{ij}
+\]</span> 为保证流体不可压缩，需要让粒子 <span class="math inline">\(i\)</span> 的密度 <span class="math inline">\(\rho_i\)</span> 与静态密度 <span class="math inline">\(\rho_0\)</span> 尽量保持一致。因此，需要对每个粒子施加一个常量密度约束： <span class="math display">\[
+C_i(p_1, p_2, ..., p_n)=\frac{\rho_i}{\rho_0}-1
+\]</span> 将密度代入可得： <span class="math display">\[
+C_i=\frac{\sum_j m_j W_{ij}}{\rho_0}-1
+\]</span> PBF针对粒子质量相同时的情况，所以可以省去 <span class="math display">\[m_j\]</span> ，即： <span class="math display">\[
+C_i=\frac{\sum_jW_{ij}}{\rho_0}-1
+\]</span> 对 <span class="math inline">\(C_i\)</span> 求梯度可得： <span class="math display">\[
+\nabla_{pk}C_i=\frac{1}{\rho_0}\sum_j\nabla_{p_k}W_{ij}
+\]</span> 这里要分两种情况： <span class="math display">\[
+\nabla_{pk}C_i=\frac{1}{\rho_0}\begin{cases}
+\sum_j\nabla_{p_k}W_{ij}&amp; \text{k=i}\\
+-\nabla_{p_k}W_{ij}&amp; \text{k=j}
+\end{cases}
+\]</span> 我的理解是，这里分情况没有什么特别的，到了下面求位移变化量的时候就看得明白了。</p>
+<p>接下来，计算PBD所需要的拉格朗日乘子 <span class="math inline">\(\lambda\)</span> ： <span class="math display">\[
+\lambda_i = -\frac{C_i}{\sum_k|\nabla_{p_k}C_i|^2}
+\]</span></p>
+<h3 id="软约束">软约束</h3>
+<p>为了避免计算 <span class="math inline">\(\lambda\)</span> 时出现除 <span class="math inline">\(0\)</span> 错误，在分母上添加一个常量 <span class="math inline">\(\epsilon\)</span> 。这种在一定程度上允许违反约束条件的约束称为软约束（soft constraint），上式变为： <span class="math display">\[
+\lambda_i = -\frac{C_i}{\sum_k|\nabla_{p_k}C_i|^2+\epsilon}
+\]</span> 经过上述约束投影后，粒子 <span class="math inline">\(i\)</span> 对应的位移向量 <span class="math inline">\(\triangle p_i\)</span> 为： <span class="math display">\[
+\triangle p_i=\lambda_i\nabla_{p_i}C_i+\sum_j\lambda_j\nabla_{p_j}C_j \\
+=\frac{1}{\rho_0}\sum_j\lambda_i\nabla_{p_i}W_{ij}+(-\frac{1}{\rho_0}\sum_j\lambda_j\nabla_{p_j}W_{ij}) \\
+=\frac{1}{\rho_0}\sum_j\lambda_i\nabla_{p_i}W_{ij}+ \frac{1}{\rho_0}\sum_j\lambda_j\nabla_{p_i}W_{ij}  \\
+=\frac{1}{\rho_0}\sum_j(\lambda_i+\lambda_j)\nabla_{p_i}W_{ij}
+\]</span> 第二行的符号变化是因为把 <span class="math inline">\(j\)</span> 换成了 <span class="math inline">\(i\)</span> ，相当于反向了，所以符号取反。</p>
+<h3 id="tensile-instability">Tensile Instability</h3>
+<p>另外，为了防止在邻居粒子不足的情况下，导致求出的流体密度低于静态密度，由此造成压强为负数，原本粒子间的压力变为吸引力，出现凝聚现象。使用了人工排斥力计算模型，当粒子距离过近时，添加排斥力使其分开，避免凝聚现象。这样，<span class="math inline">\(\triangle p_i\)</span> 的计算公式变为： <span class="math display">\[
+\triangle p_i=\frac{1}{\rho_0}\sum_j(\lambda_i+\lambda_j+S_{corr})\nabla_{p_i}W_{ij}
+\]</span> 其中，<span class="math inline">\(S_{corr}\)</span> 由下式计算得来： <span class="math display">\[
+S_{corr}=-k(\frac{W_{ij}}{Const})^n
+\]</span> 上式中的 $ Const $ 是根据光滑核函数 $ W_{poly6}$ 计算得到的一个固定值，距离距离球心的距离一般取 <span class="math inline">\(0.1\)</span> 到 <span class="math inline">\(0.3\)</span> ；<span class="math inline">\(k=0.1\)</span> 可以视为表面张力参数；<span class="math inline">\(n=4\)</span> 。</p>
+<h3 id="vorticity-confinement">Vorticity Confinement</h3>
+<p>PBD方法引入了阻尼，会导致额外的能量损失，导致本应存在的涡流消失。为了补充这部分能量，PBF引入<strong>Vorticity Confinement</strong>向系统注入能量。 <span class="math display">\[
+f_i^{vorticity}=\epsilon(N\times \omega_i)\\
+\]</span> 其中，<span class="math inline">\(N=\frac{\eta}{|\eta|}\)</span> ，<span class="math inline">\(\eta=\nabla|\omega_i|\)</span>，粒子 <span class="math inline">\(i\)</span> 的旋度 <span class="math inline">\(\omega_i\)</span> 为： <span class="math display">\[
+\omega_i=\nabla \times v=\sum_j(v_j-v_i) \times \nabla_{p_j} W_{ij}
+\]</span></p>
+<p>实际计算过程中，需要先计算出每个粒子的 <span class="math inline">\(\rho_i, \lambda_i\)</span>，然后一边计算与邻居粒子的在光滑核函数下的值，和<span class="math inline">\(S_{corr}\)</span> 项，一边累加<span class="math inline">\(\triangle p_i\)</span>。然后，通过<strong>Vorticity Confinement</strong>向系统补充能量。最后更新还要粒子速度和位置。对于固体粒子，也就是容器，按照相同的方式处理。</p>
 <h2 id="d3d上的流体模拟">D3D上的流体模拟</h2>
 <p>为了在D3D平台上实现流体模拟，这里借用了龙书给出的最基本的项目结构，在其中添加了几个类和Shader。主要涉及到这样几个部分：</p>
 <ul>
@@ -343,7 +428,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#position-based-dynamic"><span class="nav-number">1.</span> <span class="nav-text">Position Based Dynamic</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">1.1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#pbd%E5%9F%BA%E6%9C%AC%E6%B5%81%E7%A8%8B"><span class="nav-number">1.2.</span> <span class="nav-text">PBD基本流程</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#position-based-fluids"><span class="nav-number">2.</span> <span class="nav-text">Position Based Fluids</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#d3d%E4%B8%8A%E7%9A%84%E6%B5%81%E4%BD%93%E6%A8%A1%E6%8B%9F"><span class="nav-number">3.</span> <span class="nav-text">D3D上的流体模拟</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%B5%81%E4%BD%93%E6%A8%A1%E6%8B%9F%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">流体模拟概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%85%89%E6%BB%91%E7%B2%92%E5%AD%90%E5%8A%A8%E5%8A%9B%E5%AD%A6"><span class="nav-number">2.</span> <span class="nav-text">光滑粒子动力学</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#position-based-dynamic"><span class="nav-number">2.1.</span> <span class="nav-text">Position Based Dynamic</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">2.1.1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#pbd%E5%9F%BA%E6%9C%AC%E6%B5%81%E7%A8%8B"><span class="nav-number">2.1.2.</span> <span class="nav-text">PBD基本流程</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#position-based-fluids"><span class="nav-number">2.2.</span> <span class="nav-text">Position Based Fluids</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BD%AF%E7%BA%A6%E6%9D%9F"><span class="nav-number">2.2.1.</span> <span class="nav-text">软约束</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tensile-instability"><span class="nav-number">2.2.2.</span> <span class="nav-text">Tensile Instability</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#vorticity-confinement"><span class="nav-number">2.2.3.</span> <span class="nav-text">Vorticity Confinement</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#d3d%E4%B8%8A%E7%9A%84%E6%B5%81%E4%BD%93%E6%A8%A1%E6%8B%9F"><span class="nav-number">2.3.</span> <span class="nav-text">D3D上的流体模拟</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -357,7 +442,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">5</span>
+          <span class="site-state-item-count">6</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
